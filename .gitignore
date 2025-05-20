@@ -1,0 +1,6 @@
+#Test images
+*.jpg
+*.jpeg
+
+.idea/
+__pycache__/
