@@ -36,7 +36,7 @@ selection_color = (125,50,125)
 aruco_dict = cv.aruco.custom_dictionary(4,4)
 
 #                                --------------END CONFIG--------------
-def get_nmea_frame(raw_speed:float,coordinates:(float,float),timestamp:datetime.datetime):
+def get_nmea_frame(raw_speed:float,coordinates:(float,float),timestamp:datetime.datetime, course:float):
     #Sentence type ($GPRMC, since it's the minimum requirement)
     sentence_type = '$GPRMC'
 
@@ -56,9 +56,9 @@ def get_nmea_frame(raw_speed:float,coordinates:(float,float),timestamp:datetime.
         e_w = 'E' if x > 0 else 'W'
         return f'{long_degree}{long_minute:.4f},{e_w}'
     speed = round(raw_speed * 1.94384449,2) #speed over ground in knots from m/s
-    course = 0 #course over ground in degrees
+    course = round(course,1) #course over ground in degrees
     date = timestamp.strftime('%d%m%y') #date in ddmmyy
-    mode = 'A' #A(Autonomous), D(DGPS), E(DR)
+    mode = 'A' #A(Autonomous), D(DGPS), E(DR); Only in newer Nmea versions
     check_sum = '*10'
     end = f'\r\n'
     return (f'{sentence_type},{frame_time},{status},{get_lat(coordinates[0])},'
@@ -118,6 +118,14 @@ def main():
                 def get_distance(point1, point2):
                     return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
 
+                def get_course(point1, point2):
+                    delta_y = point2[0]-point1[0]
+                    delta_x = point2[1]-point1[1]
+                    slope = delta_y/delta_x
+                    angle_x = math.degrees(math.atan(slope)) #angle with the x-axis
+                    angle_y = 90 - angle_x #angle with y-axis
+                    course = angle_y + 180 if delta_x<0 else angle_y
+                    return course
 
                 # Aruco detection
                 corners, ids, rejected = cv.aruco.detectMarkers(frame_bw, aruco_dict)
@@ -128,9 +136,12 @@ def main():
                     for i in range(len(ids)):
                         # Output
                         coordinates = get_coordinates(corners2[i][0])
-                        print(get_nmea_frame(get_distance(get_coordinates(corners[i][0],0)
-                                                          ,get_coordinates(corners2[i][0],0))/delay
-                                             ,coordinates,current_time))# Extract Identified Markers
+                        point_a = get_coordinates(corners[i][0],0)
+                        point_b = get_coordinates(corners2[i][0],0)
+                        print(get_nmea_frame(get_distance(point_a,point_b)/delay
+                                             ,coordinates
+                                             ,current_time,
+                                             get_course(point_a,point_b)))# Extract Identified Markers
                     cv.aruco.drawDetectedMarkers(frame2, corners2, ids2)
                     cv.aruco.drawDetectedMarkers(frame, corners, ids)
                 else: #if there are missing markers
