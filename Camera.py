@@ -44,13 +44,17 @@ def get_nmea_frame(raw_speed:float,coordinates:(float,float),timestamp:datetime.
     frame_time = timestamp.strftime('%H%M%S.%f')[:-3] #UTC time in hhmmss.sss
     status = 'A' #Data validity; A=valid
     def get_lat(x): #latitude in ddmm.mmmm
-        value = 0
-        n_s = ''
-        return f'{value},{n_s}'
+        abs_lat = abs(x)
+        lat_degree = int(abs_lat)
+        lat_minute = (abs_lat-lat_degree)*60
+        n_s = 'N' if x > 0 else 'S'
+        return f'{lat_degree}{lat_minute:.4f},{n_s}'
     def get_long(x): #longitude in dddmm.mmmm
-        value = 0
-        e_w = ''
-        return f'{value},{e_w}'
+        abs_long = abs(x)
+        long_degree = int(abs_long)
+        long_minute = (abs_long - long_degree) * 60
+        e_w = 'E' if x > 0 else 'W'
+        return f'{long_degree}{long_minute:.4f},{e_w}'
     speed = round(raw_speed * 1.94384449,2) #speed over ground in knots from m/s
     course = 0 #course over ground in degrees
     date = timestamp.strftime('%d%m%y') #date in ddmmyy
@@ -131,12 +135,13 @@ def main():
                     cv.aruco.drawDetectedMarkers(frame, corners, ids)
                 else: #if there are missing markers
                     pass
-                    # for i in range(len(ids)):
-                    #     # Output
-                    #     coordinates = get_coordinates(corners[i][0])
-                    #     print(
-                    #         f'a;{ids[i][0]};{coordinates};{current_time}')  # Extract Identified Markers
-                    # cv.aruco.drawDetectedMarkers(frame, corners, ids)
+                    # if ids is not None:
+                    #     for i in range(len(ids)):
+                    #         # Output
+                    #         coordinates = get_coordinates(corners[i][0])
+                    #         print(
+                    #             f'a;{ids[i][0]};{coordinates};{current_time}')  # Extract Identified Markers
+                    #     cv.aruco.drawDetectedMarkers(frame, corners, ids)
                     #
                     # if ids2 is not None:
                     #     for i in range(len(ids2)):
