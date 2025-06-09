@@ -8,18 +8,32 @@ import math
 ############
 #GPS CONFIG#
 ############
-#Latitude per meter (for conversion)
-Lat_per_meter = 9.044289888*(10**(-6))
-#Longitude per meter (for conversion)
-Long_per_meter = 8.983031054*(10**(-6))
-
-# Dimensions of real area in meters
-r_length = 10000
-r_width = 10000
-
 #Start coordinates (should match the coordinates for the top left of the test area. default(0,0))
 starting_lat = 0
 starting_long = 0
+
+# Dimensions of real area in meters
+r_length = 100
+r_width = 100
+
+#Getting the conversion constants
+m1 = 111132.92     # latitude calculation term 1
+m2 = -559.82       # latitude calculation term 2
+m3 = 1.175         # latitude calculation term 3
+m4 = -0.0023       # latitude calculation term 4
+p1 = 111412.84     # longitude calculation term 1
+p2 = -93.5         # longitude calculation term 2
+p3 = 0.118         # longitude calculation term 3
+
+#Latitude degree per meter (for conversion)
+lat_per_meter = 1 / (m1 + (m2 * math.cos(2 * math.radians(starting_lat))) +
+                     (m3 * math.cos(4 * math.radians(starting_lat))) +
+                     (m4 * math.cos(6 * math.radians(starting_lat))))
+#Longitude degree per meter (for conversion)
+long_per_meter = 1 / ((p1 * math.cos(math.radians(starting_lat))) +
+                      (p2 * math.cos(3 * math.radians(starting_lat))) +
+                      (p3 * math.cos(5 * math.radians(starting_lat))))
+
 
 ##############
 #ARUCO CONFIG#
@@ -100,15 +114,15 @@ def main():
                     # Mapping
                     length_per_px = r_length / v_length
                     width_per_px = r_width / v_width
-                    lat_per_px = length_per_px * Lat_per_meter
-                    long_per_px = width_per_px * Long_per_meter
+                    lat_per_px = length_per_px * lat_per_meter
+                    long_per_px = width_per_px * long_per_meter
 
                     x, y = get_centre(rectangle)
 
                     if mode == 0:
                         return y*length_per_px, x*width_per_px
 
-                    lat = (y * lat_per_px) + starting_lat
+                    lat = starting_lat - (y * lat_per_px)
                     long = (x * long_per_px) + starting_long
 
                     short_lat = round(lat, 11)
@@ -119,7 +133,7 @@ def main():
                     return math.sqrt((point1[0] - point2[0])**2 + (point1[1] - point2[1])**2)
 
                 def get_course(point1, point2):
-                    delta_y = point2[0]-point1[0]
+                    delta_y = point1[0]-point2[0] #inversed because (0,0) is top left instead of bottom left
                     delta_x = point2[1]-point1[1]
                     if delta_x == 0 and delta_y == 0: #Object is stationary
                         return 0
