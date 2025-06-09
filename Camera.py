@@ -14,8 +14,8 @@ Lat_per_meter = 9.044289888*(10**(-6))
 Long_per_meter = 8.983031054*(10**(-6))
 
 # Dimensions of real area in meters
-r_length = 100
-r_width = 100
+r_length = 10000
+r_width = 10000
 
 #Start coordinates (should match the coordinates for the top left of the test area. default(0,0))
 starting_lat = 0
@@ -121,6 +121,20 @@ def main():
                 def get_course(point1, point2):
                     delta_y = point2[0]-point1[0]
                     delta_x = point2[1]-point1[1]
+                    if delta_x == 0 and delta_y == 0: #Object is stationary
+                        return 0
+
+                    #Edge cases
+                    if delta_x == 0 and delta_y > 0:
+                        return 0
+                    elif delta_x == 0 and delta_y < 0:
+                        return 180
+                    elif delta_y == 0 and delta_x > 0:
+                        return 90
+                    elif delta_y == 0 and delta_x < 0:
+                        return 270
+
+
                     slope = delta_y/delta_x
                     angle_x = math.degrees(math.atan(slope)) #angle with the x-axis
                     angle_y = 90 - angle_x #angle with y-axis
