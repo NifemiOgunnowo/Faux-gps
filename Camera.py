@@ -3,6 +3,7 @@ import numpy as np
 import datetime
 import time
 import math
+from locations import locations
 
 #                                --------------BEGIN CONFIG--------------
 ############
@@ -40,7 +41,7 @@ long_per_meter = 1 / ((p1 * math.cos(math.radians(starting_lat))) +
 ##############
 #Video detection
 window = 'Detection'
-framerate = 0.5
+framerate = 5
 delay = 1/framerate
 
 #Color outline for marker detection
@@ -166,33 +167,20 @@ def main():
                         coordinates = get_coordinates(corners2[i][0])
                         point_a = get_coordinates(corners[i][0],0)
                         point_b = get_coordinates(corners2[i][0],0)
-                        print(get_nmea_frame(get_distance(point_a,point_b)/delay
+
+                        # Extract Identified Markers
+                        locations[int(ids[i][0])] = get_nmea_frame(get_distance(point_a,point_b)/delay
                                              ,coordinates
                                              ,current_time,
-                                             get_course(point_a,point_b)))# Extract Identified Markers
+                                             get_course(point_a,point_b))
+
                     cv.aruco.drawDetectedMarkers(frame2, corners2, ids2)
                     cv.aruco.drawDetectedMarkers(frame, corners, ids)
                 else: #if there are missing markers
                     pass
-                    # if ids is not None:
-                    #     for i in range(len(ids)):
-                    #         # Output
-                    #         coordinates = get_coordinates(corners[i][0])
-                    #         print(
-                    #             f'a;{ids[i][0]};{coordinates};{current_time}')  # Extract Identified Markers
-                    #     cv.aruco.drawDetectedMarkers(frame, corners, ids)
-                    #
-                    # if ids2 is not None:
-                    #     for i in range(len(ids2)):
-                    #         # Output
-                    #         coordinates2 = get_coordinates(corners2[i][0])
-                    #         print(
-                    #             f's;{ids2[i][0]};{coordinates2};{current_time2}')  # Extract Identified Markers
-                    #     cv.aruco.drawDetectedMarkers(frame2, corners2, ids2)
 
-
-                cv.imshow(window, frame)
-                cv.imshow(window+'2', frame2)
+                # cv.imshow(window, frame)
+                # cv.imshow(window+'2', frame2)
 
 
         if cv.waitKey(1) & 0xFF == ord('q'):
