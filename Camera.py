@@ -41,8 +41,9 @@ long_per_meter = 1 / ((p1 * math.cos(math.radians(starting_lat))) +
 ##############
 #Video detection
 window = 'Detection'
-framerate = 5
+framerate = 30
 delay = 1/framerate
+cam = 0 #0 for built-in camera, 1 for external. default (0)
 
 #Color outline for marker detection
 selection_color = (125,50,125)
@@ -51,11 +52,11 @@ selection_color = (125,50,125)
 aruco_dict = cv.aruco.custom_dictionary(4,4)
 
 #                                --------------END CONFIG--------------
-def get_nmea_frame(raw_speed:float,coordinates:(float,float),timestamp:datetime.datetime, course:float):
+def get_gprmc_frame(raw_speed:float, coordinates:(float, float), timestamp:datetime.datetime, course:float):
     #Sentence type ($GPRMC, since it's the minimum requirement)
     sentence_type = '$GPRMC'
 
-    #Frame structure; $GPRMC,time,status,latitude,n/s,longitude,e/w,speed,course,date,magnetic variation,mode,checksum
+    #Frame structure; $GPRMC,time,status,latitude,n/s,longitude,e/w,speed,course,date,magnetic variation,mode*checksum
     frame_time = timestamp.strftime('%H%M%S.%f')[:-3] #UTC time in hhmmss.sss
     status = 'A' #Data validity; A=valid
     def get_lat(x): #latitude in ddmm.mmmm
@@ -74,15 +75,22 @@ def get_nmea_frame(raw_speed:float,coordinates:(float,float),timestamp:datetime.
     course = round(course,1) #course over ground in degrees
     date = timestamp.strftime('%d%m%y') #date in ddmmyy
     mode = 'A' #A(Autonomous), D(DGPS), E(DR); Only in newer Nmea versions
-    check_sum = '*10'
+    def get_checksum(nmea_str):
+        cs = 0
+        if '$' in nmea_str:
+            nmea_str = nmea_str.replace('$','')
+        for char in nmea_str:
+            cs ^= ord(char)
+        return f"{cs:02X}"
+    sentence = (f'{sentence_type},{frame_time},{status},{get_lat(coordinates[0])},'
+                f'{get_long(coordinates[1])},{speed},{course},{date},,{mode}')
+    checksum = get_checksum(sentence)
     end = f'\r\n'
-    return (f'{sentence_type},{frame_time},{status},{get_lat(coordinates[0])},'
-            f'{get_long(coordinates[1])},{speed},{course},'
-            f'{date},,{mode},{check_sum}{end}') #magnetic variation is ignored
+    return f'{sentence}*{checksum}{end}'  #magnetic variation is ignored
 
 
 def main():
-    cap = cv.VideoCapture(0)
+    cap = cv.VideoCapture(cam)
 
     while True:
         ret, frame = cap.read()
@@ -169,10 +177,11 @@ def main():
                         point_b = get_coordinates(corners2[i][0],0)
 
                         # Extract Identified Markers
-                        locations[int(ids[i][0])] = get_nmea_frame(get_distance(point_a,point_b)/delay
-                                             ,coordinates
-                                             ,current_time,
-                                             get_course(point_a,point_b))
+                        locations[int(ids[i][0])] = get_gprmc_frame(get_distance(point_a, point_b) / delay
+                                                                    , coordinates
+                                                                    , current_time,
+                                                                    get_course(point_a,point_b))
+                        print(locations[int(ids[i][0])])
 
                     cv.aruco.drawDetectedMarkers(frame2, corners2, ids2)
                     cv.aruco.drawDetectedMarkers(frame, corners, ids)
@@ -180,7 +189,7 @@ def main():
                     pass
 
                 # cv.imshow(window, frame)
-                # cv.imshow(window+'2', frame2)
+                cv.imshow(window+'2', frame2)
 
 
         if cv.waitKey(1) & 0xFF == ord('q'):
