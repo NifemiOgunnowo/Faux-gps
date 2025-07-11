@@ -81,7 +81,7 @@ def get_gprmc_frame(raw_speed:float, coordinates:(float, float), timestamp:datet
             nmea_str = nmea_str.replace('$','')
         for char in nmea_str:
             cs ^= ord(char)
-        return f"{cs:02X}"
+        return f"{cs:02X}" #Uppercase 2 digit hexadecimal
     sentence = (f'{sentence_type},{frame_time},{status},{get_lat(coordinates[0])},'
                 f'{get_long(coordinates[1])},{speed},{course},{date},,{mode}')
     checksum = get_checksum(sentence)
@@ -181,7 +181,7 @@ def main():
                                                                     , coordinates
                                                                     , current_time,
                                                                     get_course(point_a,point_b))
-                        print(locations[int(ids[i][0])])
+                        # print(locations[int(ids[i][0])])
 
                     cv.aruco.drawDetectedMarkers(frame2, corners2, ids2)
                     cv.aruco.drawDetectedMarkers(frame, corners, ids)
@@ -189,7 +189,7 @@ def main():
                     pass
 
                 # cv.imshow(window, frame)
-                cv.imshow(window+'2', frame2)
+                # cv.imshow(window+'2', frame2)
 
 
         if cv.waitKey(1) & 0xFF == ord('q'):
