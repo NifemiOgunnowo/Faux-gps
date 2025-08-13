@@ -10,8 +10,8 @@ from locations import locations
 #GPS CONFIG#
 ############
 #Start coordinates (should match the coordinates for the top left of the test area. default(0,0))
-starting_lat = 0
-starting_long = 0
+starting_lat = 50.937503679689584
+starting_long = -1.3978696903998111
 
 # Dimensions of real area in meters
 r_length = 100
@@ -53,24 +53,24 @@ aruco_dict = cv.aruco.custom_dictionary(4,4)
 
 #                                --------------END CONFIG--------------
 def get_gprmc_frame(raw_speed:float, coordinates:(float, float), timestamp:datetime.datetime, course:float):
-    #Sentence type ($GPRMC, since it's the minimum requirement)
+    #Sentence type
     sentence_type = '$GPRMC'
 
     #Frame structure; $GPRMC,time,status,latitude,n/s,longitude,e/w,speed,course,date,magnetic variation,mode*checksum
     frame_time = timestamp.strftime('%H%M%S.%f')[:-3] #UTC time in hhmmss.sss
     status = 'A' #Data validity; A=valid
-    def get_lat(x): #latitude in ddmm.mmmm
+    def get_lat(x): #latitude in ddmm.mmmmm
         abs_lat = abs(x)
         lat_degree = int(abs_lat)
         lat_minute = (abs_lat-lat_degree)*60
         n_s = 'N' if x > 0 else 'S'
-        return f'{lat_degree}{lat_minute:.4f},{n_s}'
-    def get_long(x): #longitude in dddmm.mmmm
+        return f'{lat_degree:02}{lat_minute:08.5f},{n_s}'
+    def get_long(x): #longitude in dddmm.mmmmm
         abs_long = abs(x)
         long_degree = int(abs_long)
         long_minute = (abs_long - long_degree) * 60
         e_w = 'E' if x > 0 else 'W'
-        return f'{long_degree}{long_minute:.4f},{e_w}'
+        return f'{long_degree:03}{long_minute:08.5f},{e_w}'
     speed = round(raw_speed * 1.94384449,2) #speed over ground in knots from m/s
     course = round(course,1) #course over ground in degrees
     date = timestamp.strftime('%d%m%y') #date in ddmmyy
@@ -88,6 +88,48 @@ def get_gprmc_frame(raw_speed:float, coordinates:(float, float), timestamp:datet
     end = f'\r\n'
     return f'{sentence}*{checksum}{end}'  #magnetic variation is ignored
 
+def get_gpgga_frame(coordinates:(float, float), timestamp:datetime.datetime):
+    #Sentence type
+    sentence_type = '$GPGGA'
+
+    #Frame structure;
+    #$GPGGA,time,latitude,n/s,longitude,e/w,quality,no_satellites,HDOP,altitude,alt_unit,undulation,und_unit,age,stn_ID*checksum
+    frame_time = timestamp.strftime('%H%M%S.%f')[:-3] #UTC time in hhmmss.sss
+    def get_lat(x): #latitude in ddmm.mmmmm
+        abs_lat = abs(x)
+        lat_degree = int(abs_lat)
+        lat_minute = (abs_lat-lat_degree)*60
+        n_s = 'N' if x > 0 else 'S'
+        return f'{lat_degree:02}{lat_minute:08.5f},{n_s}'
+    def get_long(x): #longitude in dddmm.mmmmm
+        abs_long = abs(x)
+        long_degree = int(abs_long)
+        long_minute = (abs_long - long_degree) * 60
+        e_w = 'E' if x > 0 else 'W'
+        return f'{long_degree:02}{long_minute:08.5f},{e_w}'
+    quality = '4' #Gps fix quality (x); 4 = RTK fixed ~2cm accuracy
+    sat_no = '09' #Number of satellites used (xx); 9 = decent amount for ~2cm accuracy
+    hdop = '0.5' #Horizontal dilution of precision (x.x); Quality of the horizontal position, based on satellite geometry, 0.5 = good
+    alt = '50.9,M' #Altitude above mean sea level (x.x) and unit; placeholder,M = meters
+    und = '46.9,M' #Relationship between the geoid and the WGS84 ellipsoid (x.x) and unit; placeholder,M = meters
+    def get_checksum(nmea_str):
+        cs = 0
+        if '$' in nmea_str:
+            nmea_str = nmea_str.replace('$','')
+        for char in nmea_str:
+            cs ^= ord(char)
+        return f"{cs:02X}" #Uppercase 2 digit hexadecimal
+
+    sentence = (f'{sentence_type},{frame_time},{get_lat(coordinates[0])},'
+                f'{get_long(coordinates[1])},{quality},{sat_no},{hdop},{alt},{und},')
+    checksum = get_checksum(sentence)
+    end = f'\r\n'
+    return f'{sentence}*{checksum}{end}'  #Age and station id are ignored
+
+def get_nmea_frames(raw_speed:float, coordinates:(float, float), timestamp:datetime.datetime, course:float):
+    rmc = get_gprmc_frame(raw_speed, coordinates, timestamp, course)
+    gga = get_gpgga_frame(coordinates, timestamp)
+    return f'{rmc}{gga}'
 
 def main():
     cap = cv.VideoCapture(cam)
@@ -177,11 +219,11 @@ def main():
                         point_b = get_coordinates(corners2[i][0],0)
 
                         # Extract Identified Markers
-                        locations[int(ids[i][0])] = get_gprmc_frame(get_distance(point_a, point_b) / delay
+                        locations[int(ids[i][0])] = get_nmea_frames(get_distance(point_a, point_b) / delay
                                                                     , coordinates
                                                                     , current_time,
                                                                     get_course(point_a,point_b))
-                        # print(locations[int(ids[i][0])])
+                        print(locations[int(ids[i][0])])
 
                     cv.aruco.drawDetectedMarkers(frame2, corners2, ids2)
                     cv.aruco.drawDetectedMarkers(frame, corners, ids)
