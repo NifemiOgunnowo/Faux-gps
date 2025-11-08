@@ -4,17 +4,18 @@ import socket
 import ujson
 import time
 import machine
+import for_test as tst
 
 # Uart output set up
 uart = machine.UART(0, baudrate=9600, tx=machine.Pin(0), rx=machine.Pin(1))
 
 # Network info
-ssid = '???'
-password = '12345678'
+ssid = tst.ssid
+password = tst.password
 
 # Tcp client
-HOST = '172.20.10.10' #Host IP
-PORT = 12345
+HOST = tst.HOST #Host IP
+PORT = tst.PORT
 
 id_no = '0'  # id of the corresponding marker
 
