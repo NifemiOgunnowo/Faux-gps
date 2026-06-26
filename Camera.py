@@ -18,22 +18,22 @@ r_length = 100
 r_width = 100
 
 #Getting the conversion constants
-m1 = 111132.92     # latitude calculation term 1
-m2 = -559.82       # latitude calculation term 2
-m3 = 1.175         # latitude calculation term 3
-m4 = -0.0023       # latitude calculation term 4
-p1 = 111412.84     # longitude calculation term 1
-p2 = -93.5         # longitude calculation term 2
-p3 = 0.118         # longitude calculation term 3
+M1 = 111132.92     # latitude calculation term 1
+M2 = -559.82       # latitude calculation term 2
+M3 = 1.175         # latitude calculation term 3
+M4 = -0.0023       # latitude calculation term 4
+P1 = 111412.84     # longitude calculation term 1
+P2 = -93.5         # longitude calculation term 2
+P3 = 0.118         # longitude calculation term 3
 
 #Latitude degree per meter (for conversion)
-lat_per_meter = 1 / (m1 + (m2 * math.cos(2 * math.radians(starting_lat))) +
-                     (m3 * math.cos(4 * math.radians(starting_lat))) +
-                     (m4 * math.cos(6 * math.radians(starting_lat))))
+Lat_per_meter = 1 / (M1 + (M2 * math.cos(2 * math.radians(starting_lat))) +
+                     (M3 * math.cos(4 * math.radians(starting_lat))) +
+                     (M4 * math.cos(6 * math.radians(starting_lat))))
 #Longitude degree per meter (for conversion)
-long_per_meter = 1 / ((p1 * math.cos(math.radians(starting_lat))) +
-                      (p2 * math.cos(3 * math.radians(starting_lat))) +
-                      (p3 * math.cos(5 * math.radians(starting_lat))))
+Long_per_meter = 1 / ((P1 * math.cos(math.radians(starting_lat))) +
+                      (P2 * math.cos(3 * math.radians(starting_lat))) +
+                      (P3 * math.cos(5 * math.radians(starting_lat))))
 
 
 ##############
@@ -165,8 +165,8 @@ def main():
                     # Mapping
                     length_per_px = r_length / v_length
                     width_per_px = r_width / v_width
-                    lat_per_px = length_per_px * lat_per_meter
-                    long_per_px = width_per_px * long_per_meter
+                    lat_per_px = length_per_px * Lat_per_meter
+                    long_per_px = width_per_px * Long_per_meter
 
                     x, y = get_centre(rectangle)
 
