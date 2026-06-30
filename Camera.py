@@ -211,7 +211,7 @@ def main():
                 corners2, ids2, rejected2 = cv.aruco.detectMarkers(frame2_bw, aruco_dict)
 
                 # Marker processing
-                if ids is not None and ids == ids2: #if same markers identified in both images
+                if ids is not None and np.array_equal(np.unique(ids),np.unique(ids2)): #if same markers identified in both images
                     for i in range(len(ids)):
                         # Output
                         coordinates = get_coordinates(corners2[i][0])
@@ -231,7 +231,7 @@ def main():
                     pass
 
                 # cv.imshow(window, frame)
-                # cv.imshow(window+'2', frame2)
+                cv.imshow(window+'2', frame2)
 
 
         if cv.waitKey(1) & 0xFF == ord('q'):
