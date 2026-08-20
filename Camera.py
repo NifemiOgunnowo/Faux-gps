@@ -3,7 +3,7 @@ import numpy as np
 import datetime
 import time
 import math
-from locations import locations
+from locations import locations, compass_directions
 
 #                                --------------BEGIN CONFIG--------------
 ############
@@ -41,7 +41,7 @@ Long_per_meter = 1 / ((P1 * math.cos(math.radians(starting_lat))) +
 ##############
 #Video detection
 window = 'Detection'
-framerate = 30
+framerate = 5
 delay = 1/framerate
 cam = 0 #0 for built-in camera, 1 for external. default (0)
 
@@ -131,6 +131,16 @@ def get_nmea_frames(raw_speed:float, coordinates:(float, float), timestamp:datet
     gga = get_gpgga_frame(coordinates, timestamp)
     return f'{rmc}{gga}'
 
+def get_compass_direction(corners: list[np.array]) -> float:
+    edge = corners[1] - corners[0]  # Top edge of the marker
+
+    # Angle of that edge relative to image x-axis
+    # Note: image y-axis points DOWN, so negate for standard math convention
+    angle_rad = np.arctan2(-edge[1], edge[0])
+    angle_deg = np.degrees(angle_rad) % 360
+
+    return angle_deg
+
 def main():
     cap = cv.VideoCapture(cam)
 
@@ -217,13 +227,16 @@ def main():
                         coordinates = get_coordinates(corners2[i][0])
                         point_a = get_coordinates(corners[i][0],0)
                         point_b = get_coordinates(corners2[i][0],0)
+                        compass_direction = get_compass_direction(corners2[i][0])
 
-                        # Extract Identified Markers
+                        # Extract Identified Marker Info
                         locations[int(ids[i][0])] = get_nmea_frames(get_distance(point_a, point_b) / delay
                                                                     , coordinates
                                                                     , current_time,
                                                                     get_course(point_a,point_b))
-                        print(locations[int(ids[i][0])])
+                        compass_directions[int(ids[i][0])] = compass_direction
+
+                        print(f"location -> {locations[int(ids[i][0])]} direction -> {compass_directions[int(ids[i][0])]}\n")
 
                     cv.aruco.drawDetectedMarkers(frame2, corners2, ids2)
                     cv.aruco.drawDetectedMarkers(frame, corners, ids)
