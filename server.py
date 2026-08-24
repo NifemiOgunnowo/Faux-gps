@@ -1,13 +1,13 @@
 import socket
 import threading
 import time
-from Camera import main
-import locations
+from Detector import Detector
 import json
 
 HOST = '' #Host IP
 PORT = 12345
 client_list = []
+gps_f = Detector()
 
 def handle_client(conn, addr):
     print(f"New connection from {addr}")
@@ -27,12 +27,12 @@ def accept_clients():
 
 threading.Thread(target=accept_clients, daemon=True).start()
 
-threading.Thread(target=main).start()
+threading.Thread(target=gps_f.scan).start()
 
 #Send data to all clients
 try:
     while True:
-        location_data = locations.locations
+        location_data = gps_f.get_locations()
         if location_data:
             data = json.dumps(location_data, indent=4)
             for client in client_list:
